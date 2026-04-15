@@ -107,16 +107,44 @@ public class AssistantService {
         // =========================
         // SALUDO
         // =========================
-        if (msg.matches(".*\\b(hola|buenas|hey|hi|hello)\\b.*")) {
-            return "¡Hola! 👋 ¿Qué te gustaría comprar hoy? 🛒";
+        if (msg.matches(".*(hola+|holi+|buenas+|hey+|hi+|hello+).*")) {
+            return "¡Hola! 👋\n\n"
+            + "Puedo ayudarte a:\n"
+            + "• Buscar productos 🛒\n"
+            + "• Agregar cosas a tu carrito\n"
+            + "• Recomendar recetas 🍳\n\n"
+            + "¿Qué te gustaría hacer?";
         }
 
         // =========================
+        // AYUDA
+        // =========================
+        if (msg.matches(".*(ayuda|help|ayudames|ayudame|ayudarme|ayudrme|que puedes hacer|qué puedes hacer|opciones|menu|menú).*")) {
+            return "Claro 😊 puedo ayudarte con varias cosas:\n"
+                + "- Buscar productos disponibles\n"
+                + "- Agregar artículos al carrito\n"
+                + "- Sugerirte recetas con ingredientes de tu carrito\n\n"
+                + "Por ejemplo, puedes escribir:\n"
+                + "- \"agrega 2 manzanas\"\n"
+                + "- \"¿tienen pera?\"\n"
+                + "- \"quiero una receta con manzana\"";
+        }
+        
+        // =========================
+        // BIENESTAR ALIMENTARIO (NUEVO MÓDULO APARTE)
+        // =========================
+        String respuestaBienestar = responderBienestar(msg);
+
+        if (respuestaBienestar != null) {
+            return respuestaBienestar;
+        }
+        
+        // ====================
         // DESPEDIDA
         // =========================
-        if (msg.matches(".*\\b(no|gracias|nada|eso es todo|ya no)\\b.*")) {
+        if (msg.matches(".*\\b(no|gracias|seria todo|gracias|nada|eso es todo|ya no)\\b.*")) {
             productoPendienteMap.remove(usuario);
-            return "¡Perfecto! 😊 Gracias por tu pedido 🛒";
+            return "¡Perfecto! 😊 Muchas gracias por tu pedido 🛒";
         }
 
         msg = limpiarMensaje(msg);
@@ -169,6 +197,29 @@ public class AssistantService {
         }
 
         // =========================
+        // INTENTO DE AGREGAR GENÉRICO (NUEVO)
+        // =========================
+        if (msg.matches(".*\\b(agrega|añade|pon|compra)\\b.*")) {
+
+            for (Producto p : productos) {
+                if (coincideProducto(msg, p)) {
+
+                    double cantidad = detectarCantidadNumero(msg);
+
+                    if (cantidad > 0) {
+                        return agregarAlCarrito(p, cantidad, getNombre(p), usuario)
+                                + " 🛒 ¿Quieres algo más?";
+                    }
+
+                    productoPendienteMap.put(usuario, p);
+                    return "Claro 😊 tengo " + getNombre(p) + ", ¿cuántos deseas?";
+                }
+            }
+
+            return "No encontré ese producto 😕 ¿puedes decirme el nombre exacto?";
+        }
+
+        // =========================
         // PRODUCTO PENDIENTE
         // =========================
         Producto pendiente = productoPendienteMap.get(usuario);
@@ -190,32 +241,32 @@ public class AssistantService {
         }
 
         // =========================
-        // LISTA DE PRODUCTOS
+        // LISTA DE PRODUCTOS (NUEVO)
         // =========================
-        if (msg.contains(",")) {
+        if (msg.matches(".*\\b(ver productos|mostrar productos|lista de productos|que vendes|que tienes)\\b.*")) {
 
-            String[] partes = msg.split(",");
-            StringBuilder respuesta = new StringBuilder();
+            StringBuilder res = new StringBuilder("🛒 Estos son algunos productos disponibles:\n\n");
 
-            for (String parte : partes) {
+            int count = 0;
 
-                String fragmento = normalizar(parte);
-                double cantidad = detectarCantidadNumero(fragmento);
+            for (Producto p : productos) {
 
-                if (cantidad <= 0) continue;
+                res.append("• ")
+                .append(getNombre(p))
+                .append(" ($")
+                .append(p.getPrecio())
+                .append(")\n");
 
-                Producto p = buscarMejorProducto(fragmento, productos);
+                count++;
 
-                if (p == null) continue;
-
-                respuesta.append(
-                        agregarAlCarrito(p, cantidad, getNombre(p), usuario)
-                ).append(" ");
+                if (count >= 8) break; // no saturar
             }
 
-            if (!respuesta.isEmpty()) {
-                return respuesta.toString() + "🛒";
-            }
+            res.append("\nPuedes pedirme algo como:\n");
+            res.append("- agrega 2 manzanas\n");
+            res.append("- quiero 1 kilo de tomate");
+
+            return res.toString();
         }
 
         // =========================
@@ -238,7 +289,12 @@ public class AssistantService {
             }
         }
 
-        return "No entendí bien 🤔 ¿puedes intentarlo diferente?";
+        return "No estoy seguro de haber entendido 🤔\n\n"
+            + "Puedo ayudarte con:\n"
+            + "• Buscar productos (ej: 'ver productos')\n"
+            + "• Agregar al carrito (ej: 'agrega 2 manzanas')\n"
+            + "• Recetas (ej: 'receta con una berenjena')\n\n"
+            + "¿Qué te gustaría hacer?";
     }
 
     private String normalizar(String texto) {
@@ -327,7 +383,7 @@ public class AssistantService {
                 return "Solo quedan " + p.getStock() + " de " + nombre + " 😮";
             }
 
-            return "No encontré suficiente stock 😕";
+            return "Ya no tenemos de ese producto, pero puedes seleccionar otro 😊";
         }
 
         carritoService.agregar(p, cantidadEntera, usuario);
@@ -369,6 +425,139 @@ public class AssistantService {
         }
 
         return 0;
+    }
+
+    private String responderBienestar(String msg) {
+
+        // No interferir con recetas ni con pedidos
+        if (msg.contains("receta") ||
+            msg.contains("agrega") ||
+            msg.contains("anade") ||
+            msg.contains("añade") ||
+            msg.contains("carrito") ||
+            msg.contains("tienes") ||
+            msg.contains("hay") ||
+            msg.contains("vendes")) {
+            return null;
+        }
+
+        if (contieneAlguna(msg, "saludable", "sano", "comer mejor", "alimentacion balanceada", "alimentación balanceada", "bienestar alimentario", "alimentación saludable", "dieta saludable", "comida saludable", "vida saludable", "dame opciones saludables","dame una opción saludable")) {
+            return "🥗 Recomendación de bienestar alimentario\n\n"
+                + "Opciones sugeridas:\n"
+                + "• Manzana\n"
+                + "• Zanahoria\n"
+                + "• Pepino\n"
+                + "• Espinaca\n\n"
+                + "¿Por qué puede ayudarte?\n"
+                + "Son alimentos versátiles que pueden formar parte de una alimentación equilibrada.\n\n"
+                + "Idea práctica:\n"
+                + "Puedes combinarlos en ensaladas, bowls o colaciones frescas.\n\n"
+                + "Siguiente paso:\n"
+                + "Si quieres, puedo darte opciones para desayuno, fibra o vitamina C.";
+        }
+
+        if (contieneAlguna(msg, "ligero", "ligera", "liviano", "fresco", "fresca", "algo rápido", "algo fácil", "algo sencillo",  "recomiendame algo ligero", "quiero algo ligero", "dame opciones ligeras",  "recomiendame algo sencillo", "quiero algo sencillo", "dame opciones sencillas")) {
+            return "🥒 Recomendación para una opción ligera\n\n"
+                + "Opciones sugeridas:\n"
+                + "• Pepino\n"
+                + "• Lechuga\n"
+                + "• Jitomate\n"
+                + "• Manzana\n\n"
+                + "¿Por qué puede ayudarte?\n"
+                + "Son ingredientes frescos y fáciles de combinar en preparaciones ligeras.\n\n"
+                + "Idea práctica:\n"
+                + "Puedes preparar una ensalada fresca o una colación simple.\n\n"
+                + "Siguiente paso:\n"
+                + "También puedo darte opciones con fibra o para desayuno.";
+        }
+
+        if (contieneAlguna(msg, "desayuno", "desayunar", "mañana", "manana", "comenzar el día", "empezar el día", "algo para la mañana", "algo para comenzar el día", "algo para desayunar", "opciones para la mañana", "opciones para el desayuno", "recomiendame algo para desayunar")) {
+            return "🍎 Recomendación para desayuno\n\n"
+                + "Opciones sugeridas:\n"
+                + "• Plátano\n"
+                + "• Manzana\n"
+                + "• Avena\n"
+                + "• Fresa\n\n"
+                + "¿Por qué puede ayudarte?\n"
+                + "Son ingredientes prácticos para comenzar el día con una opción sencilla y equilibrada.\n\n"
+                + "Idea práctica:\n"
+                + "Avena con plátano y manzana en cubos, o fruta fresca con yogur.\n\n"
+                + "Siguiente paso:\n"
+                + "Si quieres, puedo darte una opción más ligera o con más fibra.";
+        }
+
+        if (contieneAlguna(msg, "fibra", "digestivo", "digestion", "digestión", "estreñimiento", "intestino", "regularidad", "fibroso", "alimentos con fibra", "alimentos ricos en fibra", "recomiendame alimentos altos en fibra", "quiero alimentos con fibra", "dame opciones con fibra")) {
+            return "🌾 Recomendación con fibra\n\n"
+                + "Opciones sugeridas:\n"
+                + "• Manzana\n"
+                + "• Pera\n"
+                + "• Avena\n"
+                + "• Zanahoria\n\n"
+                + "¿Por qué puede ayudarte?\n"
+                + "Estos alimentos suelen relacionarse con un mayor aporte de fibra dentro de una alimentación variada.\n\n"
+                + "Idea práctica:\n"
+                + "Puedes combinarlos en desayuno o como colación durante el día.\n\n"
+                + "Siguiente paso:\n"
+                + "También puedo recomendarte opciones saludables o para vitamina C.";
+        }
+
+        if (contieneAlguna(msg, "vitamina c", "vitamina c", "defensas", "inmunidad", "resistencia", "infecciones", "vitamina c alimentos", "alimentos con vitamina c", "alimentos ricos en vitamina c", "alimentos con vitamina c", "recomiendame alimentos con vitamina c", "quiero alimentos con vitamina c", "dame opciones con vitamina c")) {
+            return "🍊 Recomendación con vitamina C\n\n"
+                + "Opciones sugeridas:\n"
+                + "• Naranja\n"
+                + "• Fresa\n"
+                + "• Kiwi\n"
+                + "• Pimiento\n\n"
+                + "¿Por qué puede ayudarte?\n"
+                + "Son alimentos conocidos por aportar vitamina C dentro de una alimentación equilibrada.\n\n"
+                + "Idea práctica:\n"
+                + "Puedes usarlos en ensaladas frescas, jugos naturales o colaciones.\n\n"
+                + "Siguiente paso:\n"
+                + "Si quieres, también puedo darte opciones ligeras o para desayuno.";
+        }
+
+        if (contieneAlguna(msg, "energia", "energía", "cansancio", "activo", "energético", "energética", "alimentos para energía", "alimentos con energía", "alimentos energéticos", "recomiendame algo con energía", "quiero algo con energía", "dame opciones con energía")) {
+            return "⚡ Recomendación para energía diaria\n\n"
+                + "Opciones sugeridas:\n"
+                + "• Plátano\n"
+                + "• Avena\n"
+                + "• Manzana\n"
+                + "• Frutos secos\n\n"
+                + "¿Por qué puede ayudarte?\n"
+                + "Son opciones prácticas para colaciones o desayunos dentro de una rutina diaria.\n\n"
+                + "Idea práctica:\n"
+                + "Puedes combinarlos en un desayuno rápido o una colación de media mañana.\n\n"
+                + "Siguiente paso:\n"
+                + "También puedo darte una opción más ligera o con fibra.";
+        }
+
+        if (contieneAlguna(msg, "dieta", "dieta saludable", "comer mejor", "plan alimenticio", "alimentación saludable", "alimentacion saludable", "recomiendame una dieta", "quiero una dieta", "dame un plan alimenticio", "recomiendame un plan alimenticio", "quiero un plan alimenticio", "dame una dieta", "recomiendame una alimentación saludable", "quiero una alimentación saludable", "dame una alimentación saludable")) {
+            return "💡 Asistente de bienestar alimentario\n\n"
+                + "Puedo orientarte con recomendaciones generales como:\n"
+                + "• Opciones saludables\n"
+                + "• Ideas para desayuno\n"
+                + "• Alimentos con fibra\n"
+                + "• Opciones con vitamina C\n"
+                + "• Alternativas ligeras\n\n"
+                + "Importante:\n"
+                + "Estas son sugerencias generales de alimentación y no sustituyen orientación médica o nutricional profesional.\n\n"
+                + "Ejemplos de consulta:\n"
+                + "• \"quiero algo saludable\"\n"
+                + "• \"dame opciones con fibra\"\n"
+                + "• \"recomiendame alimentos con vitamina c\"\n"
+                + "• \"qué frutas tienen vitamina C\"";
+        }
+
+        return null;
+    }
+
+    private boolean contieneAlguna(String texto, String... opciones) {
+        for (String opcion : opciones) {
+            if (texto.contains(opcion)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String capitalize(String str) {

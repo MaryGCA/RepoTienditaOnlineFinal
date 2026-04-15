@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const db = require('../db'); // Conexión MariaDB
+const db = require('../db'); //MariaDB
 
 const PUBLIC_DIR = path.join(__dirname, '../public');
 

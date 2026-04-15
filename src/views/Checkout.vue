@@ -1,10 +1,8 @@
 <template>
-  <v-container class="mt-10" style="max-width:500px">
+  <v-container class="mt-4" style="max-width:500px">
     <h2 class="mb-6">Pago y Dirección de Envío</h2>
 
     <v-form ref="form" v-model="valido">
-
-      <!-- 📍 DIRECCIÓN -->
       <v-text-field
         label="Dirección"
         placeholder="Calle, número, colonia"
@@ -42,7 +40,6 @@
 
       <v-divider class="my-6"></v-divider>
 
-      <!-- 💳 TARJETA -->
       <v-text-field
         label="Número de Tarjeta"
         placeholder="1234 5678 9012 3456"
@@ -93,7 +90,6 @@
         v-model="guardar"
       />
 
-      <!-- BOTONES -->
       <v-row class="mt-6">
         <v-col cols="6">
           <v-btn color="green" block @click="pagar">
@@ -102,18 +98,24 @@
         </v-col>
 
         <v-col cols="6">
-          <v-btn outlined block @click="$router.push('/cart')">
+          <v-btn outlined block @click="volverAtras">
             ATRÁS
           </v-btn>
         </v-col>
       </v-row>
-
     </v-form>
   </v-container>
 </template>
 
 <script>
 export default {
+  props: {
+    embedded: {
+      type: Boolean,
+      default: false
+    }
+  },
+
   data() {
     const currentYear = new Date().getFullYear() % 100;
 
@@ -134,7 +136,6 @@ export default {
   },
 
   methods: {
-
     direccionValida(v) {
       return !!v || "La dirección es obligatoria";
     },
@@ -162,7 +163,7 @@ export default {
 
     anioValido(v) {
       const a = parseInt(v);
-      return (a >= this.currentYear) || "Año inválido";
+      return a >= this.currentYear || "Año inválido";
     },
 
     titularValido(v) {
@@ -173,22 +174,28 @@ export default {
       return /^\d{3,4}$/.test(v) || "CVV inválido";
     },
 
-    async pagar() {
+    volverAtras() {
+      if (this.embedded) {
+        this.$emit("back-cart");
+      } else {
+        this.$router.push("/cart");
+      }
+    },
 
+    async pagar() {
       if (!this.$refs.form || !this.$refs.form.validate()) return;
 
-      const user = JSON.parse(localStorage.getItem("user"))
+      const user = JSON.parse(localStorage.getItem("user"));
 
-      if(!user){
-        alert("Debes iniciar sesión")
-        return
+      if (!user) {
+        alert("Debes iniciar sesión");
+        return;
       }
 
-      const usuario = user.id || user.email
+      const usuario = user.id || user.email;
 
       try {
-
-        const carritoRes = await fetch(`http://localhost:8081/api/carrito?usuario=${usuario}`)
+        const carritoRes = await fetch(`http://localhost:8081/api/carrito?usuario=${usuario}`);
         const productosCarrito = await carritoRes.json();
 
         if (!productosCarrito.length) {
@@ -196,7 +203,6 @@ export default {
           return;
         }
 
-        // 🔥 FIX IMPORTANTE (agregar variedad)
         const productos = productosCarrito.map(p => ({
           nombre: p.nombre,
           variedad: p.variedad,
@@ -210,20 +216,16 @@ export default {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-
             usuario,
-
             direccion: this.direccion,
             ciudad: this.ciudad,
             codigoPostal: this.cp,
             telefono: this.telefono,
-
             tarjeta: this.tarjeta,
             titular: this.titular,
             mes: this.mes,
             anio: this.anio,
             cvv: this.cvv,
-
             estado: "EN_PROCESO",
             fecha: new Date(),
             productos
@@ -236,8 +238,13 @@ export default {
           method: "DELETE"
         });
 
-        this.$router.push("/pago-exitoso");
+        window.dispatchEvent(new Event("carritoActualizado"));
 
+        if (this.embedded) {
+          this.$emit("pago-exitoso");
+        } else {
+          this.$router.push("/pago-exitoso");
+        }
       } catch (error) {
         console.error(error);
         alert("Error al procesar el pago");
