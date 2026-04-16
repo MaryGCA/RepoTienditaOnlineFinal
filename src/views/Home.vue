@@ -1,251 +1,266 @@
 <template>
-  <v-app>
-    <Navbar @open-panel="abrirPanel" />
+  <v-container fluid class="home-page">
+    <div class="home-shell" :class="{ 'panel-open': panelVisible }">
+      <!-- CONTENIDO PRINCIPAL -->
+      <div class="home-main">
+        <!-- HERO -->
+        <v-card class="hero-card" flat>
+          <v-img
+            src="/cover2.png"
+            class="hero-img"
+            gradient="to right, rgba(73,217,160,0.35), rgba(73,217,160,0.15), rgba(255,255,255,0)"
+          >
+            <div class="hero-overlay">
+              <div class="hero-content">
+                <div class="hero-badge">#Envío gratuito</div>
 
-    <!-- PANEL LATERAL -->
-    <v-navigation-drawer
-      v-model="drawer"
-      right
-      temporary
-      fixed
-      :width="$vuetify.breakpoint.smAndDown ? '100%' : 470"
-      class="panel-drawer"
-    >
-      <div class="panel-header">
-        <div class="panel-title">{{ tituloPanel }}</div>
-        <v-btn icon @click="drawer = false">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
-      </div>
+                <h1 class="hero-title">Haz tu pedido diario de comestibles</h1>
 
-      <div class="panel-body">
-        <Wishlist v-if="panelActivo === 'wishlist'" />
-        <Cart
-          v-if="panelActivo === 'cart'"
-          :embedded="true"
-          @go-checkout="abrirPanel('checkout')"
-        />
-        <Pedidos v-if="panelActivo === 'pedidos'" />
-        <Checkout
-          v-if="panelActivo === 'checkout'"
-          :embedded="true"
-          @back-cart="abrirPanel('cart')"
-          @pago-exitoso="manejarPagoExitoso"
-        />
-      </div>
-    </v-navigation-drawer>
+                <p class="hero-subtitle">
+                  Frutas y verduras frescas, y compras inteligentes en un solo lugar.
+                </p>
 
-    <v-container fluid class="home-container">
-      <v-row>
-        <v-col cols="12">
-          <!-- HERO -->
-          <v-card class="hero-card" flat>
-            <v-img
-              src="/cover2.png"
-              class="hero-img"
-              gradient="to right, rgba(73,217,160,0.35), rgba(73,217,160,0.15), rgba(255,255,255,0)"
-            >
-              <div class="hero-overlay">
-                <div class="hero-content">
-                  <div class="hero-badge">#Envío gratuito</div>
-
-                  <h1 class="hero-title">Haz tu pedido diario de comestibles</h1>
-
-                  <p class="hero-subtitle">
-                    Frutas y verduras frescas, y compras inteligentes en un solo lugar.
-                  </p>
-
-                  <div class="hero-search">
-                    <v-text-field
-                      v-model="busqueda"
-                      label="Search your daily groceries"
-                      prepend-inner-icon="mdi-magnify"
-                      solo
-                      rounded
-                      flat
-                      clearable
-                      hide-details
-                      class="search-field"
-                    />
-                  </div>
+                <div class="hero-search">
+                  <v-text-field
+                    v-model="busqueda"
+                    label="Search your daily groceries"
+                    prepend-inner-icon="mdi-magnify"
+                    solo
+                    rounded
+                    flat
+                    clearable
+                    hide-details
+                    class="search-field"
+                  />
                 </div>
               </div>
-            </v-img>
-          </v-card>
+            </div>
+          </v-img>
+        </v-card>
 
-          <!-- RESULTADOS DE BÚSQUEDA -->
-          <div v-if="busqueda" class="mt-6">
-            <v-toolbar flat color="transparent" class="section-toolbar px-0">
-              <v-toolbar-title class="section-title">
-                Resultados de búsqueda
-              </v-toolbar-title>
-            </v-toolbar>
-
-            <v-row class="product-grid" v-if="productosFiltrados.length > 0">
-              <v-col
-                v-for="item in productosFiltrados"
-                :key="item.id"
-                cols="12"
-                sm="6"
-                md="4"
-                lg="3"
-              >
-                <v-card class="pa-4 product-card" outlined>
-                  <div class="product-image-wrap">
-                    <v-img
-                      :src="item.img"
-                      height="140"
-                      contain
-                      class="mb-2"
-                    />
-                  </div>
-
-                  <div class="text-subtitle-1 font-weight-medium product-name">
-                    {{ item.name }}
-                  </div>
-
-                  <div class="text-caption grey--text mb-2 product-weight">
-                    {{ item.weight }}
-                  </div>
-
-                  <div class="text-h6 font-weight-bold mb-3 product-price">
-                    ${{ item.price }}
-                  </div>
-
-                  <div class="d-flex align-center justify-space-between product-actions">
-                    <div class="d-flex align-center qty-box">
-                      <v-btn icon small @click="decrease(item)">
-                        <v-icon>mdi-minus</v-icon>
-                      </v-btn>
-
-                      <span class="mx-2 qty-text">{{ item.qty }}</span>
-
-                      <v-btn icon small @click="increase(item)">
-                        <v-icon color="green">mdi-plus</v-icon>
-                      </v-btn>
-                    </div>
-
-                    <div class="d-flex action-buttons">
-                      <v-btn fab small class="wishlist-btn" @click="addToWishlist(item)">
-                        <v-icon color="#FF6D59">mdi-heart</v-icon>
-                      </v-btn>
-
-                      <v-btn color="green" dark fab small class="cart-btn" @click="addToCart(item)">
-                        <v-icon>mdi-cart</v-icon>
-                      </v-btn>
-                    </div>
-                  </div>
-                </v-card>
-              </v-col>
-            </v-row>
-
-            <v-alert
-              v-else
-              type="info"
-              text
-              color="green"
-              class="mt-2"
-            >
-              No se encontraron productos con esa búsqueda.
-            </v-alert>
-          </div>
-
-          <!-- CATEGORÍAS -->
-          <v-toolbar flat color="transparent" class="section-toolbar mt-6 px-0">
-            <v-toolbar-title class="section-title">Categoría</v-toolbar-title>
-            <v-spacer></v-spacer>
+        <!-- RESULTADOS DE BÚSQUEDA -->
+        <div v-if="busqueda" class="mt-6">
+          <v-toolbar flat color="transparent" class="section-toolbar px-0">
+            <v-toolbar-title class="section-title">
+              Resultados de búsqueda
+            </v-toolbar-title>
           </v-toolbar>
 
-          <div :class="busqueda ? 'categoria-mini' : ''">
-            <Category @select-category="seleccionarCategoria" />
+          <v-row class="product-grid" v-if="productosFiltrados.length > 0">
+            <v-col
+              v-for="item in productosFiltrados"
+              :key="item.id"
+              cols="12"
+              sm="6"
+              md="4"
+              lg="3"
+            >
+              <v-card class="pa-4 product-card" outlined>
+                <div class="product-image-wrap">
+                  <v-img :src="item.img" height="140" contain class="mb-2" />
+                </div>
+
+                <div class="text-subtitle-1 font-weight-medium product-name">
+                  {{ item.name }}
+                </div>
+
+                <div class="text-caption grey--text mb-2 product-weight">
+                  {{ item.weight }}
+                </div>
+
+                <div class="text-h6 font-weight-bold mb-2 product-price">
+                  ${{ item.price }}
+                </div>
+
+                <div class="mb-3">
+                  <v-chip small dark :color="getStockColor(item)">
+                    {{ getStockText(item) }}
+                  </v-chip>
+                </div>
+
+                <div class="d-flex align-center justify-space-between product-actions">
+                  <div class="d-flex align-center qty-box">
+                    <v-btn
+                      icon
+                      small
+                      @click="decrease(item)"
+                      :disabled="item.stock <= 0"
+                    >
+                      <v-icon>mdi-minus</v-icon>
+                    </v-btn>
+
+                    <span class="mx-2 qty-text">{{ item.qty }}</span>
+
+                    <v-btn
+                      icon
+                      small
+                      @click="increase(item)"
+                      :disabled="item.stock <= 0 || item.qty >= item.stock"
+                    >
+                      <v-icon color="green">mdi-plus</v-icon>
+                    </v-btn>
+                  </div>
+
+                  <div class="d-flex action-buttons">
+                    <v-btn fab small class="wishlist-btn" @click="addToWishlist(item)">
+                      <v-icon color="#FF6D59">mdi-heart</v-icon>
+                    </v-btn>
+
+                    <v-btn
+                      color="green"
+                      dark
+                      fab
+                      small
+                      class="cart-btn"
+                      @click="addToCart(item)"
+                      :disabled="item.stock <= 0"
+                    >
+                      <v-icon>mdi-cart</v-icon>
+                    </v-btn>
+                  </div>
+                </div>
+              </v-card>
+            </v-col>
+          </v-row>
+
+          <v-alert v-else type="info" text color="green" class="mt-2">
+            No se encontraron productos con esa búsqueda.
+          </v-alert>
+        </div>
+
+        <!-- CATEGORÍAS -->
+        <v-toolbar flat color="transparent" class="section-toolbar mt-6 px-0">
+          <v-toolbar-title class="section-title">Categoría</v-toolbar-title>
+        </v-toolbar>
+
+        <div :class="busqueda ? 'categoria-mini' : ''">
+          <Category @select-category="seleccionarCategoria" />
+        </div>
+
+        <!-- PRODUCTOS -->
+        <v-card
+          v-if="!busqueda"
+          flat
+          color="#E2F2E5"
+          class="popular-section mt-6"
+        >
+          <v-toolbar flat color="transparent" class="section-toolbar mb-4 px-0">
+            <v-toolbar-title class="section-title">
+              {{ tituloSeccion }}
+            </v-toolbar-title>
+          </v-toolbar>
+
+          <v-row class="product-grid" v-if="productosSeccion.length > 0">
+            <v-col
+              v-for="item in productosSeccion"
+              :key="'section-' + item.id"
+              cols="12"
+              sm="6"
+              md="4"
+              lg="3"
+            >
+              <v-card class="pa-4 product-card" outlined>
+                <div class="product-image-wrap">
+                  <v-img :src="item.img" height="140" contain />
+                </div>
+
+                <div class="text-subtitle-1 font-weight-medium product-name">
+                  {{ item.name }}
+                </div>
+
+                <div class="text-caption grey--text mb-2 product-weight">
+                  {{ item.weight }}
+                </div>
+
+                <div class="text-h6 font-weight-bold mb-2 product-price">
+                  ${{ item.price }}
+                </div>
+
+                <div class="mb-3">
+                  <v-chip small dark :color="getStockColor(item)">
+                    {{ getStockText(item) }}
+                  </v-chip>
+                </div>
+
+                <div class="d-flex align-center justify-space-between product-actions">
+                  <div class="d-flex align-center qty-box">
+                    <v-btn
+                      icon
+                      small
+                      @click="decrease(item)"
+                      :disabled="item.stock <= 0"
+                    >
+                      <v-icon>mdi-minus</v-icon>
+                    </v-btn>
+
+                    <span class="mx-2 qty-text">{{ item.qty }}</span>
+
+                    <v-btn
+                      icon
+                      small
+                      @click="increase(item)"
+                      :disabled="item.stock <= 0 || item.qty >= item.stock"
+                    >
+                      <v-icon color="green">mdi-plus</v-icon>
+                    </v-btn>
+                  </div>
+
+                  <div class="d-flex action-buttons">
+                    <v-btn fab small class="wishlist-btn" @click="addToWishlist(item)">
+                      <v-icon color="#FF6D59">mdi-heart</v-icon>
+                    </v-btn>
+
+                    <v-btn
+                      color="green"
+                      dark
+                      fab
+                      small
+                      class="cart-btn"
+                      @click="addToCart(item)"
+                      :disabled="item.stock <= 0"
+                    >
+                      <v-icon>mdi-cart</v-icon>
+                    </v-btn>
+                  </div>
+                </div>
+              </v-card>
+            </v-col>
+          </v-row>
+
+          <v-alert v-else type="info" text color="green" class="mt-2">
+            No se encontraron productos para esta categoría.
+          </v-alert>
+        </v-card>
+
+        <Client />
+        <Partner />
+        <Footer />
+      </div>
+
+      <!-- PANEL LATERAL DERECHO -->
+      <transition name="slide-panel">
+        <aside v-if="panelVisible" class="side-panel">
+          <div class="panel-header">
+            <div class="panel-title">{{ tituloPanel }}</div>
+
+            <v-btn icon @click="cerrarPanel">
+              <v-icon>mdi-close</v-icon>
+            </v-btn>
           </div>
 
-          <!-- PRODUCTOS POPULARES / CATEGORÍA -->
-          <v-card
-            v-if="!busqueda"
-            flat
-            color="#E2F2E5"
-            class="popular-section mt-6"
-          >
-            <v-toolbar flat color="transparent" class="section-toolbar mb-4 px-0">
-              <v-toolbar-title class="section-title">
-                {{ tituloSeccion }}
-              </v-toolbar-title>
-            </v-toolbar>
-
-            <v-row class="product-grid" v-if="productosSeccion.length > 0">
-              <v-col
-                v-for="item in productosSeccion"
-                :key="'section-' + item.id"
-                cols="12"
-                sm="6"
-                md="4"
-                lg="3"
-              >
-                <v-card class="pa-4 product-card" outlined>
-                  <div class="product-image-wrap">
-                    <v-img
-                      :src="item.img"
-                      height="140"
-                      contain
-                    />
-                  </div>
-
-                  <div class="text-subtitle-1 font-weight-medium product-name">
-                    {{ item.name }}
-                  </div>
-
-                  <div class="text-caption grey--text mb-2 product-weight">
-                    {{ item.weight }}
-                  </div>
-
-                  <div class="text-h6 font-weight-bold mb-3 product-price">
-                    ${{ item.price }}
-                  </div>
-
-                  <div class="d-flex align-center justify-space-between product-actions">
-                    <div class="d-flex align-center qty-box">
-                      <v-btn icon small @click="decrease(item)">
-                        <v-icon>mdi-minus</v-icon>
-                      </v-btn>
-
-                      <span class="mx-2 qty-text">{{ item.qty }}</span>
-
-                      <v-btn icon small @click="increase(item)">
-                        <v-icon color="green">mdi-plus</v-icon>
-                      </v-btn>
-                    </div>
-
-                    <div class="d-flex action-buttons">
-                      <v-btn fab small class="wishlist-btn" @click="addToWishlist(item)">
-                        <v-icon color="#FF6D59">mdi-heart</v-icon>
-                      </v-btn>
-
-                      <v-btn color="green" dark fab small class="cart-btn" @click="addToCart(item)">
-                        <v-icon>mdi-cart</v-icon>
-                      </v-btn>
-                    </div>
-                  </div>
-                </v-card>
-              </v-col>
-            </v-row>
-
-            <v-alert
-              v-else
-              type="info"
-              text
-              color="green"
-              class="mt-2"
-            >
-              No se encontraron productos para esta categoría.
-            </v-alert>
-          </v-card>
-
-          <Client />
-          <Partner />
-        </v-col>
-      </v-row>
-    </v-container>
+          <div class="panel-body">
+            <Wishlist v-if="panelActivo === 'wishlist'" />
+            <Cart
+              v-if="panelActivo === 'cart'"
+              :embedded="true"
+              @go-checkout="abrirPanel('checkout')"
+            />
+            <Pedidos v-if="panelActivo === 'pedidos'" />
+            <Checkout v-if="panelActivo === 'checkout'" />
+          </div>
+        </aside>
+      </transition>
+    </div>
 
     <!-- MODAL -->
     <v-dialog v-model="dialog" max-width="400">
@@ -257,13 +272,10 @@
         </v-btn>
       </v-card>
     </v-dialog>
-
-    <Footer />
-  </v-app>
+  </v-container>
 </template>
 
 <script>
-import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Category from "../components/Category.vue";
 import Client from "../components/Client.vue";
@@ -277,7 +289,6 @@ export default {
   name: "Home",
 
   components: {
-    Navbar,
     Footer,
     Category,
     Client,
@@ -293,7 +304,7 @@ export default {
       busqueda: "",
       productos: [],
       categoriaSeleccionada: null,
-      drawer: false,
+      panelVisible: false,
       panelActivo: null,
       dialog: false,
       dialogMessage: ""
@@ -302,6 +313,13 @@ export default {
 
   mounted() {
     this.cargarProductos();
+    window.addEventListener("stockActualizado", this.cargarProductos);
+    window.addEventListener("abrirPanelLateral", this.recibirEventoPanel);
+  },
+
+  beforeDestroy() {
+    window.removeEventListener("stockActualizado", this.cargarProductos);
+    window.removeEventListener("abrirPanelLateral", this.recibirEventoPanel);
   },
 
   computed: {
@@ -342,9 +360,9 @@ export default {
     tituloPanel() {
       const titulos = {
         wishlist: "Mis favoritos",
-        cart: "Carrito",
+        cart: "Mi carrito",
         pedidos: "Mis pedidos",
-        checkout: "Pago"
+        checkout: "Pagar"
       };
 
       return titulos[this.panelActivo] || "Panel";
@@ -352,6 +370,23 @@ export default {
   },
 
   methods: {
+    recibirEventoPanel(event) {
+      const panel = event?.detail?.panel;
+      if (panel) {
+        this.abrirPanel(panel);
+      }
+    },
+
+    abrirPanel(panel) {
+      this.panelActivo = panel;
+      this.panelVisible = true;
+    },
+
+    cerrarPanel() {
+      this.panelVisible = false;
+      this.panelActivo = null;
+    },
+
     normalizarProductos(data) {
       return data.map(product => ({
         id: product.id,
@@ -359,7 +394,7 @@ export default {
         weight: product.variedad || "Sin variedad",
         price: product.precio,
         stock: product.stock || 0,
-        qty: 1,
+        qty: (product.stock || 0) > 0 ? 1 : 0,
         img: product.imagen || "/default.webp",
         categoriaId: product.categoriaId
       }));
@@ -382,26 +417,32 @@ export default {
       this.categoriaSeleccionada = category;
     },
 
-    abrirPanel(panel) {
-      this.panelActivo = panel;
-      this.drawer = true;
+    getStockText(item) {
+      if (item.stock <= 0) return "Agotado";
+      if (item.stock <= 3) return "Últimas unidades";
+      return "Disponible";
     },
 
-    manejarPagoExitoso() {
-      this.drawer = false;
-      this.dialogMessage = "✅ Pago realizado con éxito";
-      this.dialog = true;
+    getStockColor(item) {
+      if (item.stock <= 0) return "red";
+      if (item.stock <= 3) return "orange";
+      return "green";
     },
 
     increase(item) {
+      if (item.stock <= 0) return;
+
       if (item.qty < item.stock) {
         item.qty++;
       } else {
-        alert("No hay más stock disponible");
+        this.dialogMessage = "⚠️ No hay más stock disponible";
+        this.dialog = true;
       }
     },
 
     decrease(item) {
+      if (item.stock <= 0) return;
+
       if (item.qty > 1) {
         item.qty--;
       }
@@ -412,6 +453,12 @@ export default {
 
       if (!user) {
         this.dialogMessage = "⚠️ Debes iniciar sesión";
+        this.dialog = true;
+        return;
+      }
+
+      if (item.stock <= 0) {
+        this.dialogMessage = "❌ Este producto está agotado";
         this.dialog = true;
         return;
       }
@@ -430,14 +477,23 @@ export default {
           })
         });
 
-        if (!response.ok) throw new Error("Error agregando al carrito");
+        const data = await response.json();
 
-        this.dialogMessage = "🛒 Producto agregado al carrito";
+        if (!response.ok) {
+          throw new Error(data.message || "Error agregando al carrito");
+        }
+
+        this.dialogMessage = data.message || "🛒 Producto agregado al carrito";
         this.dialog = true;
         item.qty = 1;
+
+        await this.cargarProductos();
         window.dispatchEvent(new Event("carritoActualizado"));
+        window.dispatchEvent(new Event("stockActualizado"));
       } catch (error) {
         console.error("Error carrito", error);
+        this.dialogMessage = error.message || "❌ Error al agregar al carrito";
+        this.dialog = true;
       }
     },
 
@@ -465,9 +521,9 @@ export default {
         });
 
         localStorage.setItem(key, JSON.stringify(wishlist));
-        this.dialogMessage = "❤️ Producto agregado a wishlist";
+        this.dialogMessage = "❤️ Producto agregado a favoritos";
       } else {
-        this.dialogMessage = "❤️ Este producto ya está en tu wishlist";
+        this.dialogMessage = "❤️ Este producto ya está en favoritos";
       }
 
       this.dialog = true;
@@ -477,8 +533,39 @@ export default {
 </script>
 
 <style scoped>
-.panel-drawer {
-  z-index: 1200;
+.home-page {
+  padding-top: 8px;
+}
+
+.home-shell {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  transition: all 0.3s ease;
+}
+
+.home-main {
+  flex: 1;
+  min-width: 0;
+  transition: all 0.3s ease;
+}
+
+.home-shell.panel-open .home-main {
+  width: calc(100% - 420px);
+}
+
+.side-panel {
+  width: 400px;
+  min-width: 400px;
+  max-width: 400px;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  position: sticky;
+  top: 88px;
+  max-height: calc(100vh - 110px);
+  overflow: hidden;
+  z-index: 5;
 }
 
 .panel-header {
@@ -501,16 +588,14 @@ export default {
 
 .panel-body {
   padding: 8px 10px 20px 10px;
+  overflow-y: auto;
+  max-height: calc(100vh - 170px);
 }
 
 .categoria-mini {
-  transform: scale(0.85);
-  opacity: 0.7;
-  margin-top: -20px;
-}
-
-.home-container {
-  padding-top: 8px;
+  transform: scale(0.88);
+  opacity: 0.8;
+  transform-origin: top center;
 }
 
 .hero-card {
@@ -654,6 +739,17 @@ export default {
   background: white;
 }
 
+.slide-panel-enter-active,
+.slide-panel-leave-active {
+  transition: all 0.28s ease;
+}
+
+.slide-panel-enter,
+.slide-panel-leave-to {
+  opacity: 0;
+  transform: translateX(18px);
+}
+
 @media (max-width: 1264px) {
   .hero-title {
     font-size: 2.4rem;
@@ -665,6 +761,29 @@ export default {
 
   .hero-overlay {
     padding: 26px 30px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .home-shell {
+    flex-direction: column;
+  }
+
+  .home-shell.panel-open .home-main {
+    width: 100%;
+  }
+
+  .side-panel {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    position: relative;
+    top: 0;
+    max-height: none;
+  }
+
+  .panel-body {
+    max-height: none;
   }
 }
 
@@ -683,7 +802,7 @@ export default {
 }
 
 @media (max-width: 600px) {
-  .home-container {
+  .home-page {
     padding-left: 8px;
     padding-right: 8px;
   }
@@ -741,10 +860,6 @@ export default {
 
   .product-card {
     border-radius: 16px;
-  }
-
-  .panel-body {
-    padding: 6px;
   }
 }
 </style>
