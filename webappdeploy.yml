@@ -33,4 +33,4 @@ steps:
     app_location: '/'
     output_location: 'dist'
     skip_app_build: true
-    azure_static_web_apps_api_token: '$(AZURE_STATIC_WEB_APPS_API_TOKEN)'
+    azure_static_web_apps_api_token: '$(853940fc8b252a771db3623a597ee6988e18579dd818361250d17d0284ba5d9a07-a30caedf-07c0-4be6-acb1-b5ecc4c32fb701e1721088b02b1e)'
