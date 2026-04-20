@@ -16,7 +16,6 @@ steps:
   workingDirectory: '$(System.DefaultWorkingDirectory)'
 
 - script: |
-    export NODE_OPTIONS=--openssl-legacy-provider
     npm run build
   displayName: 'Compilar frontend Vue'
   workingDirectory: '$(System.DefaultWorkingDirectory)'
