@@ -27,10 +27,12 @@ steps:
     ./mvnw -f grocery-backend/pom.xml clean package -DskipTests
   displayName: 'Compilar backend Spring Boot'
   workingDirectory: '$(System.DefaultWorkingDirectory)'
+
 - task: AzureStaticWebApp@0
   displayName: 'Desplegar frontend a Azure Static Web App'
   inputs:
-    app_location: '/'
-    output_location: 'dist'
+    app_location: '/dist'
+    output_location: ''
     skip_app_build: true
+    skip_api_build: true
     azure_static_web_apps_api_token: '$(AZURE_STATIC_WEB_APPS_API_TOKEN)'
