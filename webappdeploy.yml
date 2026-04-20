@@ -20,16 +20,13 @@ steps:
   displayName: 'Compilar frontend Vue'
   workingDirectory: '$(System.DefaultWorkingDirectory)'
 
-- task: Maven@4
+- script: |
+    export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+    export PATH=$JAVA_HOME/bin:$PATH
+    chmod +x ./mvnw
+    ./mvnw -f grocery-backend/pom.xml clean package -DskipTests
   displayName: 'Compilar backend Spring Boot'
-  inputs:
-    mavenPomFile: 'grocery-backend/pom.xml'
-    goals: 'clean package -DskipTests'
-    publishJUnitResults: false
-    javaHomeOption: 'JDKVersion'
-    jdkVersionOption: '1.17'
-    jdkArchitectureOption: 'x64'
-
+  workingDirectory: '$(System.DefaultWorkingDirectory)'
 - task: AzureStaticWebApp@0
   displayName: 'Desplegar frontend a Azure Static Web App'
   inputs:
