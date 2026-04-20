@@ -1,19 +1,39 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
 trigger:
 - main
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'ubuntu-latest'
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+- task: UseNode@1
+  displayName: 'Usar Node.js 18'
+  inputs:
+    version: '18.x'
 
 - script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+    npm ci
+  displayName: 'Instalar dependencias'
+  workingDirectory: '$(System.DefaultWorkingDirectory)'
+
+- script: |
+    npm run build
+  displayName: 'Compilar frontend Vue'
+  workingDirectory: '$(System.DefaultWorkingDirectory)'
+
+- task: Maven@4
+  displayName: 'Compilar backend Spring Boot'
+  inputs:
+    mavenPomFile: 'grocery-backend/pom.xml'
+    goals: 'clean package -DskipTests'
+    publishJUnitResults: false
+    javaHomeOption: 'JDKVersion'
+    jdkVersionOption: '1.17'
+    jdkArchitectureOption: 'x64'
+
+- task: AzureStaticWebApp@0
+  displayName: 'Desplegar frontend a Azure Static Web App'
+  inputs:
+    app_location: '/'
+    output_location: 'dist'
+    skip_app_build: true
+    azure_static_web_apps_api_token: '$(AZURE_STATIC_WEB_APPS_API_TOKEN)'
