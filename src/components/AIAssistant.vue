@@ -1,60 +1,34 @@
 <template>
   <div>
-    <!-- Botón flotante -->
     <v-btn
       fab
       fixed
       bottom
       right
-      color="green"
+      color="green darken-1"
       dark
       class="assistant-fab"
-      @click="toggleChat"
+      @click="open = true"
     >
-      <v-icon>mdi-robot</v-icon>
+      <v-icon size="34">mdi-robot</v-icon>
     </v-btn>
 
-    <!-- Ventana chat -->
-    <v-dialog v-model="open" width="420" persistent>
+    <v-dialog v-model="open" width="420">
       <v-card class="assistant-card">
         <v-card-title class="assistant-header">
-          <div class="header-content">
-            <div>
-              <div class="assistant-title">Asistente Virtual</div>
-              <div class="assistant-subtitle">Frutas, vegetales y recetas</div>
-            </div>
-
-            <v-btn icon dark @click="open = false">
-              <v-icon>mdi-close</v-icon>
-            </v-btn>
-          </div>
+          Asistente Virtual
         </v-card-title>
 
-        <v-card-text
-          ref="chatBox"
-          class="chat-body"
-        >
+        <v-card-text class="chat-box" ref="chatBox">
           <div
             v-for="(msg, i) in messages"
             :key="i"
             class="message-row"
-            :class="msg.type"
+            :class="msg.roleClass"
           >
-            <div class="message-bubble" :class="msg.type">
-              <div class="message-author">
-                {{ msg.author }}
-              </div>
-
-              <div class="message-text">
-                {{ msg.text }}
-              </div>
-            </div>
-          </div>
-
-          <div v-if="isTyping" class="message-row bot">
-            <div class="message-bubble bot typing-bubble">
-              <div class="message-author">Asistente</div>
-              <div class="typing-text">Escribiendo...</div>
+            <div class="message-bubble" :class="msg.roleClass">
+              <div class="message-role">{{ msg.role }}</div>
+              <div class="message-text">{{ msg.text }}</div>
             </div>
           </div>
         </v-card-text>
@@ -66,17 +40,10 @@
             dense
             outlined
             hide-details
-            class="chat-input"
             @keyup.enter="sendMessage"
           ></v-text-field>
 
-          <v-btn
-            color="green"
-            dark
-            class="send-btn"
-            :loading="isTyping"
-            @click="sendMessage"
-          >
+          <v-btn color="green" dark @click="sendMessage">
             Enviar
           </v-btn>
         </v-card-actions>
@@ -93,59 +60,42 @@ export default {
     return {
       open: false,
       input: "",
-      isTyping: false,
       messages: [
         {
-          type: "bot",
-          author: "Asistente",
-          text: "¡Hola! 👋 Soy tu asistente virtual. Puedo ayudarte a buscar productos, agregar artículos al carrito y sugerirte recetas con frutas y verduras."
+          role: "Asistente",
+          roleClass: "agente",
+          text: "¡Hola! 👋 Soy tu asistente virtual. Puedo ayudarte con productos, carrito, recetas y bienestar alimentario."
         }
       ]
     };
   },
 
   methods: {
-    toggleChat() {
-      this.open = true;
-      this.scrollToBottom();
-    },
-
-    scrollToBottom() {
-      this.$nextTick(() => {
-        const chatBox = this.$refs.chatBox;
-        if (chatBox) {
-          chatBox.scrollTop = chatBox.scrollHeight;
-        }
-      });
-    },
-
     async sendMessage() {
-      if (!this.input.trim() || this.isTyping) return;
+      if (!this.input.trim()) return;
 
       const user = JSON.parse(localStorage.getItem("user"));
 
       if (!user) {
         this.messages.push({
-          type: "system",
-          author: "Sistema",
-          text: "⚠️ Debes iniciar sesión para usar el asistente."
+          role: "Sistema",
+          roleClass: "sistema",
+          text: "⚠️ Debes iniciar sesión"
         });
-        this.scrollToBottom();
+        this.scrollBottom();
         return;
       }
 
-      const texto = this.input.trim();
-      const usuario = user.id || user.email;
+      const userMessage = this.input.trim();
 
       this.messages.push({
-        type: "user",
-        author: "Tú",
-        text: texto
+        role: "Tú",
+        roleClass: "usuario",
+        text: userMessage
       });
 
       this.input = "";
-      this.isTyping = true;
-      this.scrollToBottom();
+      this.scrollBottom();
 
       try {
         const response = await fetch("http://localhost:8081/api/chat", {
@@ -154,36 +104,45 @@ export default {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            message: texto,
-            usuario: usuario
+            message: userMessage,
+            usuario: user.id || user.email
           })
         });
 
         if (!response.ok) {
-          throw new Error("Respuesta inválida del servidor");
+          throw new Error("Error del servidor");
         }
 
         const data = await response.json();
 
         this.messages.push({
-          type: "bot",
-          author: "Asistente",
-          text: data.reply || "No pude generar una respuesta en este momento."
+          role: "Asistente",
+          roleClass: "agente",
+          text: data.reply || "No recibí respuesta en este momento."
         });
 
         window.dispatchEvent(new Event("carritoActualizado"));
+        this.scrollBottom();
       } catch (error) {
-        console.error(error);
+        console.error("Error:", error);
 
         this.messages.push({
-          type: "system",
-          author: "Sistema",
-          text: "❌ Ocurrió un error al conectar con el servidor."
+          role: "Sistema",
+          roleClass: "sistema",
+          text: "❌ Error conectando con el servidor"
         });
-      } finally {
-        this.isTyping = false;
-        this.scrollToBottom();
+
+        this.scrollBottom();
       }
+    },
+
+    scrollBottom() {
+      this.$nextTick(() => {
+        const chatBox = this.$refs.chatBox;
+        if (chatBox) {
+          chatBox.scrollTop = chatBox.scrollHeight;
+        }
+      });
     }
   }
 };
@@ -191,7 +150,12 @@ export default {
 
 <style scoped>
 .assistant-fab {
-  z-index: 999;
+  z-index: 3000 !important;
+  width: 72px !important;
+  height: 72px !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  box-shadow: 0 10px 28px rgba(46, 125, 50, 0.35) !important;
 }
 
 .assistant-card {
@@ -202,76 +166,61 @@ export default {
 .assistant-header {
   background: linear-gradient(135deg, #2e7d32, #43a047);
   color: white;
-  padding: 16px;
+  font-weight: bold;
 }
 
-.header-content {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.assistant-title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.assistant-subtitle {
-  font-size: 0.82rem;
-  opacity: 0.9;
-  margin-top: 2px;
-}
-
-.chat-body {
-  height: 380px;
+.chat-box {
+  height: 360px;
   overflow-y: auto;
-  background: #f5f7f6;
-  padding: 16px;
+  background: #f7faf7;
+  padding: 14px;
+}
+
+.chat-actions {
+  padding: 12px;
 }
 
 .message-row {
   display: flex;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
-.message-row.user {
+.message-row.usuario {
   justify-content: flex-end;
 }
 
-.message-row.bot,
-.message-row.system {
+.message-row.agente,
+.message-row.sistema {
   justify-content: flex-start;
 }
 
 .message-bubble {
   max-width: 82%;
-  padding: 10px 12px;
   border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 10px 12px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
 }
 
-.message-bubble.user {
+.message-bubble.usuario {
   background: #2e7d32;
   color: white;
-  border-bottom-right-radius: 6px;
+  border-bottom-right-radius: 4px;
 }
 
-.message-bubble.bot {
+.message-bubble.agente {
   background: white;
-  color: #263238;
-  border-bottom-left-radius: 6px;
+  color: #1f2937;
+  border-bottom-left-radius: 4px;
 }
 
-.message-bubble.system {
+.message-bubble.sistema {
   background: #fff3e0;
-  color: #6d4c41;
-  border-bottom-left-radius: 6px;
+  color: #7c4d00;
+  border-bottom-left-radius: 4px;
 }
 
-.message-author {
-  font-size: 0.76rem;
+.message-role {
+  font-size: 0.75rem;
   font-weight: 700;
   margin-bottom: 4px;
   opacity: 0.85;
@@ -280,31 +229,5 @@ export default {
 .message-text {
   white-space: pre-line;
   line-height: 1.45;
-  font-size: 0.95rem;
-}
-
-.typing-bubble {
-  opacity: 0.92;
-}
-
-.typing-text {
-  font-style: italic;
-  color: #607d8b;
-}
-
-.chat-actions {
-  padding: 12px 16px 16px 16px;
-  background: white;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.chat-input {
-  flex: 1;
-}
-
-.send-btn {
-  height: 40px;
 }
 </style>

@@ -6,7 +6,7 @@
         <img src="/frutero.png" class="logo"/>
       </div>
 
-      <h2 class="mb-4 text-center">Inicio de sesión</h2>
+      <h2 class="mb-4 text-center">Aqui puedes iniciar sesion</h2>
 
       <!-- LOGIN EMAIL -->
       <v-text-field

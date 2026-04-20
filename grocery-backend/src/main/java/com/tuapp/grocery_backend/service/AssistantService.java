@@ -26,6 +26,8 @@ public class AssistantService {
     private Map<String, Producto> productoPendienteMap = new ConcurrentHashMap<>();
 
     public String chat(String message, String usuario) {
+        System.out.println("🔥 VERSION NUEVA DE ASSISTANTSERVICE ACTIVA");
+        System.out.println("Mensaje recibido: " + message);
 
         if (usuario == null || usuario.isBlank()) {
             return "⚠️ Usuario no identificado";
@@ -50,7 +52,7 @@ public class AssistantService {
         }
 
         // =========================
-        // INSTRUCCIONES DE RECETA buscarRecetas
+        // INSTRUCCIONES DE RECETA cargarProductos
         // =========================
         if (lower.equals("si") || lower.equals("sí") || lower.contains("instrucciones")) {
             return recipeService.obtenerInstrucciones(usuario);
@@ -182,19 +184,27 @@ public class AssistantService {
         // =========================
         // DISPONIBILIDAD
         // =========================
-        if (msg.matches(".*\\b(tienes|hay|vendes)\\b.*")) {
+        if (msg.matches(".*\\b(agrega|añade|pon|compra|quiero|dame|necesito|me das)\\b.*")) {
 
-            productoPendienteMap.remove(usuario);
+                for (Producto p : productos) {
+                    if (coincideProducto(msg, p)) {
 
-            for (Producto p : productos) {
-                if (coincideProducto(msg, p)) {
-                    productoPendienteMap.put(usuario, p);
-                    return "Sí 😊 tenemos " + getNombre(p) + ". ¿Cuántos quieres?";
+                        double cantidad = detectarCantidadNumero(msg);
+
+                        // 🔥 SI YA VIENE LA CANTIDAD → AGREGA DIRECTO
+                        if (cantidad > 0) {
+                            return agregarAlCarrito(p, cantidad, getNombre(p), usuario)
+                                    + " 🛒 ¿Quieres algo más?";
+                        }
+
+                        // 🔥 SI NO, PREGUNTA
+                        productoPendienteMap.put(usuario, p);
+                        return "Claro 😊 ¿Cuántos quieres de " + getNombre(p) + "?";
+                    }
                 }
-            }
 
-            return "Ups 😕 no encontré ese producto";
-        }
+                return "No encontré ese producto 😕 ¿puedes decirme el nombre exacto?";
+    }
 
         // =========================
         // INTENTO DE AGREGAR GENÉRICO (NUEVO)

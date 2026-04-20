@@ -6,8 +6,8 @@
     "serve": "NODE_OPTIONS=--openssl-legacy-provider vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
-    "backend": "cd grocery-backend && mvn spring-boot:run",
-    "dev": "concurrently \"npm run backend\" \"npm run serve\""
+    "backend": "cd grocery-backend && ./mvnw spring-boot:run",
+    "dev": "concurrently \"npm run serve\" \"npm run backend\""
   },
   "dependencies": {
     "@fortawesome/vue-fontawesome": "^2.0.6",

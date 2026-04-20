@@ -1,7 +1,7 @@
 <template>
   <v-container fluid class="home-page">
     <div class="home-shell" :class="{ 'panel-open': panelVisible }">
-      <!-- CONTENIDO PRINCIPAL -->
+      <!-- CONTENIDO PRINCIPAL del addToCart cd ~/Descargas/grocery-vue-project-main -->
       <div class="home-main">
         <!-- HERO -->
         <v-card class="hero-card" flat>
@@ -477,7 +477,14 @@ export default {
           })
         });
 
-        const data = await response.json();
+        const rawText = await response.text();
+        let data = {};
+
+        try {
+          data = rawText ? JSON.parse(rawText) : {};
+        } catch (e) {
+          data = {};
+        }
 
         if (!response.ok) {
           throw new Error(data.message || "Error agregando al carrito");

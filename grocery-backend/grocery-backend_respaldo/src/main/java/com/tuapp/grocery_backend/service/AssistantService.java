@@ -26,6 +26,8 @@ public class AssistantService {
     // CHAT PRINCIPAL
     // =========================
     public String chat(String message, String usuario) {
+        System.out.println("🔥 ESTOY USANDO EL ASSISTANTSERVICE CORRECTO");
+        System.out.println("📩 Mensaje recibido: " + message);
 
         if (usuario == null || usuario.isBlank()) {
             return "⚠️ Usuario no identificado";
